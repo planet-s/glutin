@@ -1,4 +1,4 @@
-use {ContextError, CreationError, GlAttributes, PixelFormatRequirements};
+use {ContextError, CreationError, GlAttributes, PixelFormat, PixelFormatRequirements};
 
 use api::osmesa;
 
@@ -61,10 +61,5 @@ impl Context {
     #[inline]
     pub fn get_pixel_format(&self) -> PixelFormat {
         unreachable!();
-    }
-
-    #[inline]
-    pub unsafe fn raw_handle(&self) -> RawHandle {
-        RawHandle::Egl(self.osmesa.raw_handle())
     }
 }
