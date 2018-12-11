@@ -1,5 +1,6 @@
-use {ContextError, CreationError, GlAttributes, PixelFormat, PixelFormatRequirements};
+use winit::os::redox::WindowExt;
 
+use {ContextError, CreationError, GlAttributes, PixelFormat, PixelFormatRequirements};
 use api::osmesa;
 
 pub struct Context{
@@ -14,7 +15,22 @@ impl Context {
         pf_reqs: &PixelFormatRequirements,
         gl_attr: &GlAttributes<&Context>,
     ) -> Result<(winit::Window, Self), CreationError> {
-        Err(CreationError::NotSupported("Context::new is not supported on Redox"))
+        let window = window_builder.build(events_loop)?;
+
+        let osmesa = {
+            let (w, h) = window.get_inner_size().unwrap().into(); //TODO
+
+            let arc = window.get_orbclient_window();
+            let win = arc.borrow();
+
+            let gl_attr = gl_attr.clone().map_sharing(|ctxt| &ctxt.osmesa);
+
+            osmesa::OsMesaContext::new((w, h), pf_reqs, &gl_attr)?
+        };
+
+        Ok((window, Context {
+            osmesa
+        }))
     }
 
     #[inline]
@@ -23,8 +39,7 @@ impl Context {
         pf_reqs: &PixelFormatRequirements,
         gl_attr: &GlAttributes<&Context>,
         shareable_with_windowed_contexts: bool,
-    ) -> Result<Self, CreationError>
-    {
+    ) -> Result<Self, CreationError> {
         Err(CreationError::NotSupported("Context::new_context is not supported on Redox"))
     }
 
