@@ -73,9 +73,10 @@ impl OsMesaContext {
         opengl: &GlAttributes<&OsMesaContext>,
     ) -> Result<OsMesaContext, CreationError>
     {
-        // osmesa_sys::OsMesa::try_loading()
-        //     .map_err(LoadingError::new)
-        //     .map_err(|e| CreationError::NoBackendAvailable(Box::new(e)))?;
+        #[cfg(not(target_os = "redox"))]
+        osmesa_sys::OsMesa::try_loading()
+            .map_err(LoadingError::new)
+            .map_err(|e| CreationError::NoBackendAvailable(Box::new(e)))?;
 
         if opengl.sharing.is_some() { panic!("Context sharing not possible with OsMesa") }
 
