@@ -24,7 +24,10 @@ impl Context {
     ) -> Result<(winit::Window, Self), CreationError> {
         let window = window_builder.build(events_loop)?;
 
-        let (w, h) = window.get_inner_size().unwrap().into(); //TODO
+        let dpi = window.get_hidpi_factor();
+        let logical_size = window.get_inner_size().unwrap();
+        let physical_size = logical_size.to_physical(dpi);
+        let (w, h) = physical_size.into();
         let gl_attr = gl_attr.clone().map_sharing(|ctxt| &ctxt.osmesa);
         let osmesa = osmesa::OsMesaContext::new((w, h), pf_reqs, &gl_attr)?;
 
@@ -53,7 +56,9 @@ impl Context {
 
     #[inline]
     pub unsafe fn make_current(&self) -> Result<(), ContextError> {
-        self.osmesa.make_current()
+        self.osmesa.make_current()?;
+        osmesa_sys::OSMesaPixelStore(osmesa_sys::OSMESA_Y_UP, 0);
+        Ok(())
     }
 
     #[inline]
@@ -73,15 +78,13 @@ impl Context {
             let win_fb = win.data_mut();
             let osmesa_fb = self.osmesa.get_framebuffer();
             for i in 0..osmesa_fb.len() {
-                if i == 0 {
-                    println!("{}: {:X}", i, osmesa_fb[i]);
-                } 
                 win_fb[i] = Color {
                     data: osmesa_fb[i] | 0xFF000000
                 };
             }
         }
         win.sync();
+
         Ok(())
     }
 

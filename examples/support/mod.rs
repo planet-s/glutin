@@ -71,6 +71,7 @@ impl Gl {
             self.gl.ClearColor(color[0], color[1], color[2], color[3]);
             self.gl.Clear(gl::COLOR_BUFFER_BIT);
             self.gl.DrawArrays(gl::TRIANGLES, 0, 3);
+            self.gl.Finish();
         }
     }
 }
