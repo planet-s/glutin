@@ -26,6 +26,7 @@ winit = { git = "https://gitlab.redox-os.org/redox-os/winit.git", branch = "redo
 shared_library = "0.1.0"
 
 [target.'cfg(target_os = "redox")'.dependencies]
+orbclient = "0.3.18"
 osmesa-sys = { git = "https://gitlab.redox-os.org/redox-os/osmesa-rs.git", branch = "redox" }
 
 [build-dependencies]

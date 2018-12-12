@@ -1,10 +1,17 @@
+extern crate orbclient;
+
+use std::cell::RefCell;
+use std::sync::Arc;
 use winit::os::redox::WindowExt;
 
 use {ContextError, CreationError, GlAttributes, PixelFormat, PixelFormatRequirements};
 use api::osmesa;
 
+use self::orbclient::{Color, Renderer};
+
 pub struct Context{
     osmesa: osmesa::OsMesaContext,
+    window: Arc<RefCell<orbclient::Window>>,
 }
 
 impl Context {
@@ -17,19 +24,15 @@ impl Context {
     ) -> Result<(winit::Window, Self), CreationError> {
         let window = window_builder.build(events_loop)?;
 
-        let osmesa = {
-            let (w, h) = window.get_inner_size().unwrap().into(); //TODO
+        let (w, h) = window.get_inner_size().unwrap().into(); //TODO
+        let gl_attr = gl_attr.clone().map_sharing(|ctxt| &ctxt.osmesa);
+        let osmesa = osmesa::OsMesaContext::new((w, h), pf_reqs, &gl_attr)?;
 
-            let arc = window.get_orbclient_window();
-            let win = arc.borrow();
-
-            let gl_attr = gl_attr.clone().map_sharing(|ctxt| &ctxt.osmesa);
-
-            osmesa::OsMesaContext::new((w, h), pf_reqs, &gl_attr)?
-        };
+        let orbclient_window = window.get_orbclient_window();
 
         Ok((window, Context {
-            osmesa
+            osmesa: osmesa,
+            window: orbclient_window,
         }))
     }
 
@@ -65,7 +68,21 @@ impl Context {
 
     #[inline]
     pub fn swap_buffers(&self) -> Result<(), ContextError> {
-        unreachable!();
+        let mut win = self.window.borrow_mut();
+        {
+            let win_fb = win.data_mut();
+            let osmesa_fb = self.osmesa.get_framebuffer();
+            for i in 0..osmesa_fb.len() {
+                if i == 0 {
+                    println!("{}: {:X}", i, osmesa_fb[i]);
+                } 
+                win_fb[i] = Color {
+                    data: osmesa_fb[i] | 0xFF000000
+                };
+            }
+        }
+        win.sync();
+        Ok(())
     }
 
     #[inline]
@@ -75,6 +92,16 @@ impl Context {
 
     #[inline]
     pub fn get_pixel_format(&self) -> PixelFormat {
-        unreachable!();
+        PixelFormat {
+            hardware_accelerated: false,
+            color_bits: 24,
+            alpha_bits: 8,
+            depth_bits: 24, //TODO
+            stencil_bits: 8, //TODO
+            stereoscopy: false,
+            double_buffer: true,
+            multisampling: None,
+            srgb: false,
+        }
     }
 }
