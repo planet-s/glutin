@@ -126,6 +126,15 @@ impl OsMesaContext {
         attribs.push(osmesa_sys::OSMESA_FORMAT);
         attribs.push(osmesa_sys::OSMESA_BGRA as libc::c_int);
 
+        attribs.push(osmesa_sys::OSMESA_DEPTH_BITS);
+        attribs.push(24);
+
+        attribs.push(osmesa_sys::OSMESA_STENCIL_BITS);
+        attribs.push(8);
+
+        attribs.push(osmesa_sys::OSMESA_ACCUM_BITS);
+        attribs.push(0);
+
         // attribs array must be NULL terminated.
         attribs.push(0);
 
