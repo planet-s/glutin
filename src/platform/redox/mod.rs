@@ -1,6 +1,7 @@
 extern crate orbclient;
 
 use std::cell::RefCell;
+use std::ptr;
 use std::sync::Arc;
 use winit::os::redox::WindowExt;
 
@@ -77,10 +78,8 @@ impl Context {
         {
             let win_fb = win.data_mut();
             let osmesa_fb = self.osmesa.get_framebuffer();
-            for i in 0..osmesa_fb.len() {
-                win_fb[i] = Color {
-                    data: osmesa_fb[i] | 0xFF000000
-                };
+            unsafe {
+                ptr::copy(osmesa_fb.as_ptr(), win_fb.as_mut_ptr() as *mut u32, win_fb.len());
             }
         }
         win.sync();
