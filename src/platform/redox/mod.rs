@@ -1,17 +1,18 @@
 extern crate orbclient;
 
 use std::cell::RefCell;
-use std::ptr;
+use std::{mem, ptr};
 use std::sync::Arc;
 use winit::os::redox::WindowExt;
 
 use {ContextError, CreationError, GlAttributes, PixelFormat, PixelFormatRequirements};
 use api::osmesa;
 
-use self::orbclient::{Color, Renderer};
+use self::orbclient::Renderer;
 
 pub struct Context{
     osmesa: osmesa::OsMesaContext,
+    flush: extern "C" fn(),
     window: Arc<RefCell<orbclient::Window>>,
 }
 
@@ -32,26 +33,30 @@ impl Context {
         let gl_attr = gl_attr.clone().map_sharing(|ctxt| &ctxt.osmesa);
         let osmesa = osmesa::OsMesaContext::new((w, h), pf_reqs, &gl_attr)?;
 
+        let flush = osmesa.get_proc_address("glFlush");
+        println!("flush: {:p}", flush);
+
         let orbclient_window = window.get_orbclient_window();
 
         Ok((window, Context {
             osmesa: osmesa,
+            flush: mem::transmute::<*const (), extern "C" fn()>(flush),
             window: orbclient_window,
         }))
     }
 
     #[inline]
     pub unsafe fn new_context(
-        el: &winit::EventsLoop,
-        pf_reqs: &PixelFormatRequirements,
-        gl_attr: &GlAttributes<&Context>,
-        shareable_with_windowed_contexts: bool,
+        _el: &winit::EventsLoop,
+        _pf_reqs: &PixelFormatRequirements,
+        _gl_attr: &GlAttributes<&Context>,
+        _shareable_with_windowed_contexts: bool,
     ) -> Result<Self, CreationError> {
         Err(CreationError::NotSupported("Context::new_context is not supported on Redox"))
     }
 
     #[inline]
-    pub fn resize(&self, width: u32, height: u32) {
+    pub fn resize(&self, _width: u32, _height: u32) {
         unreachable!();
     }
 
@@ -74,6 +79,8 @@ impl Context {
 
     #[inline]
     pub fn swap_buffers(&self) -> Result<(), ContextError> {
+        (self.flush)();
+
         let mut win = self.window.borrow_mut();
         {
             let win_fb = win.data_mut();
