@@ -1,8 +1,7 @@
 extern crate orbclient;
 
-use std::cell::RefCell;
 use std::{mem, ptr};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use winit::os::redox::WindowExt;
 
 use {ContextError, CreationError, GlAttributes, PixelFormat, PixelFormatRequirements};
@@ -13,7 +12,7 @@ use self::orbclient::Renderer;
 pub struct Context{
     osmesa: osmesa::OsMesaContext,
     flush: extern "C" fn(),
-    window: Arc<RefCell<orbclient::Window>>,
+    window: Arc<Mutex<orbclient::Window>>,
 }
 
 impl Context {
@@ -81,7 +80,7 @@ impl Context {
     pub fn swap_buffers(&self) -> Result<(), ContextError> {
         (self.flush)();
 
-        let mut win = self.window.borrow_mut();
+        let mut win = self.window.lock().unwrap();
         {
             let win_fb = win.data_mut();
             let osmesa_fb = self.osmesa.get_framebuffer();
